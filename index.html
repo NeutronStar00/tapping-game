@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tapping Game</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+        #tap-button {
+            font-size: 2em;
+            padding: 20px;
+            margin: 20px;
+            background-color: #6200ea;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+        #score {
+            font-size: 1.5em;
+            margin: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Tapping Game</h1>
+    <button id="tap-button">Tap Me!</button>
+    <div id="score">Score: 0</div>
+
+    <script>
+        const tapButton = document.getElementById('tap-button');
+        const scoreDisplay = document.getElementById('score');
+        let score = 0;
+
+        tapButton.addEventListener('click', async () => {
+            score++;
+            scoreDisplay.innerText = `Score: ${score}`;
+
+            try {
+                const response = await fetch('/tap', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId: userId, taps: 1 }),
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    alert(error);
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        // Assuming you get the userId from the Telegram Web App initialization
+        let userId = null;
+        window.Telegram.WebApp.onEvent('initData', (data) => {
+            userId = data.userId;
+        });
+    </script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+    
+        tg.onEvent('initData', function (data) {
+            userId = data.userId;
+        });
+    </script>
+</body>
+</html>
