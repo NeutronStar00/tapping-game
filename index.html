@@ -1,14 +1,17 @@
+<!-- public/index.html -->
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>MYCoin Tapping Game</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Russo+One&display=swap" rel="stylesheet">
     <style>
-        html, body {
+        html,
+        body {
             width: 100%;
             height: 100%;
             margin: 0;
@@ -17,6 +20,7 @@
             background: linear-gradient(to bottom, #35edf3, #0015ff);
             font-family: 'Russo One', sans-serif;
         }
+
         body {
             display: flex;
             flex-direction: column;
@@ -27,6 +31,7 @@
             position: relative;
             box-sizing: border-box;
         }
+
         #coin-count {
             font-size: 2.5em;
             color: #fff;
@@ -35,18 +40,21 @@
             display: flex;
             align-items: center;
         }
+
         #coin-count img {
             width: 50px;
             height: 50px;
             margin-right: 10px;
             filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.5));
         }
+
         #rank {
             font-size: 1.5em;
             color: #fff;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             margin-bottom: 20px;
         }
+
         #tap-button {
             width: 150px;
             height: 150px;
@@ -57,9 +65,11 @@
             position: absolute;
             filter: drop-shadow(4px 4px 8px rgba(0, 0, 0, 0.5));
         }
+
         #tap-button:active {
             transform: scale(0.95);
         }
+
         .floating-plus-one {
             position: absolute;
             color: #51ff00;
@@ -67,6 +77,7 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             animation: floatUp 1s ease-in-out forwards;
         }
+
         .floating-minus-one {
             position: absolute;
             color: #FF0000;
@@ -74,16 +85,19 @@
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             animation: floatUp 1s ease-in-out forwards;
         }
+
         @keyframes floatUp {
             0% {
                 opacity: 1;
                 transform: translateY(0);
             }
+
             100% {
                 opacity: 0;
                 transform: translateY(-60px);
             }
         }
+
         #game-title {
             font-size: 4em;
             color: #fff;
@@ -91,6 +105,7 @@
             margin-bottom: 20px;
             text-align: center;
         }
+
         #tap-instructions {
             font-size: 1.2em;
             color: #fff;
@@ -98,27 +113,34 @@
             margin-bottom: 20px;
             text-align: center;
         }
+
         @media (max-width: 480px) {
             #game-title {
                 font-size: 3em;
             }
+
             #tap-instructions {
                 font-size: 1em;
             }
+
             #coin-count {
                 font-size: 2em;
             }
+
             #coin-count img {
                 width: 50px;
                 height: 50px;
             }
+
             #rank {
                 font-size: 1.2em;
             }
+
             #tap-button {
                 width: 120px;
                 height: 120px;
             }
+
             .floating-plus-one,
             .floating-minus-one {
                 font-size: 2em;
@@ -126,14 +148,16 @@
         }
     </style>
 </head>
+
 <body>
     <div id="game-title">MYCoin</div>
-    <div id="tap-instructions">Tap the coin bag to earn MYCoins! <br> But be careful, if you miss, <br> you'll lose a coin!</div>
+    <div id="tap-instructions">Tap the coin bag to earn MYCoins! <br> But be careful, if you miss, <br> you'll lose a coin!
+    </div>
     <div id="coin-count">
         <img src="https://img.icons8.com/emoji/48/000000/coin-emoji.png" alt="Coin">
         <span id="coin-number">0</span>
     </div>
-    <div id="rank">Rank: 0</div>
+    <div id="rank">Rank: 1</div>
     <button id="tap-button"></button>
     <div style="position: absolute; top: 20px; left: 20px; font-size: 2em;">⏰ <span id="timer">60s</span></div>
 
@@ -150,7 +174,8 @@
         let moveInterval = 950; // Bag movement interval in milliseconds
         let gameIntervalId = null;
         let gameActive = true; // Flag to track if the game is running
-        let moveTimeoutId = null; 
+        let moveTimeoutId = null;
+        let userId = null; // To store the user ID
 
         function showFloatingPlusOne() {
             const plusOne = document.createElement('div');
@@ -189,11 +214,24 @@
             tapButton.style.left = `${newX}px`;
             tapButton.style.top = `${newY}px`;
 
-            moveTimeoutId = setTimeout(moveCoinBag, moveInterval); 
+            moveTimeoutId = setTimeout(moveCoinBag, moveInterval);
+        }
+
+        async function fetchCoinCountAndRank() {
+            try {
+                const response = await fetch(`/score?userId=${userId}`);
+                const data = await response.json();
+                coinCount = data.taps || 0;
+                const rank = data.rank || 1;
+                coinNumber.innerText = coinCount;
+                rankDisplay.innerText = `Rank: ${rank}`;
+            } catch (error) {
+                console.error('Error fetching coin count and rank:', error);
+            }
         }
 
         document.addEventListener('click', async (event) => {
-            if (!gameActive) return; 
+            if (!gameActive) return;
 
             const now = Date.now();
             if (now - lastTapTime < 800) {
@@ -215,6 +253,28 @@
                 showFloatingPlusOne();
             } else {
                 showFloatingMinusOne();
+            }
+
+            try {
+                // Update the taps on the server
+                const response = await fetch('/tap', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ userId: userId, taps: isButtonClicked ? 1 : -1 }),
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    console.error('Error updating taps:', error);
+                    // You might want to display an error message to the user here
+                } else {
+                    // Optionally update the rank after updating taps
+                    await fetchCoinCountAndRank();
+                }
+            } catch (error) {
+                console.error('Error updating taps:', error);
             }
         });
 
@@ -263,16 +323,30 @@
 
             document.body.appendChild(endScreen);
         }
+
         function endGame() {
             clearInterval(gameIntervalId);
             clearTimeout(moveTimeoutId); // Clear the timeout when the game ends
-            gameActive = false; 
+            gameActive = false;
             tapButton.disabled = true;
             tapButton.style.cursor = 'not-allowed';
             showEndScreen();
         }
 
-        window.addEventListener('load', startGame);
+        // Get userId from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        userId = urlParams.get('userId');
+
+        window.addEventListener('load', () => {
+            if (userId) {
+                fetchCoinCountAndRank();
+                startGame();
+            } else {
+                console.error('User ID not found in URL parameters.');
+                // Handle the case where userId is not available (e.g., display an error message)
+            }
+        });
     </script>
 </body>
+
 </html>
