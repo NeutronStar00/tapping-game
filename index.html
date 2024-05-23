@@ -218,17 +218,20 @@
         }
 
         async function fetchCoinCountAndRank() {
-            try {
-                const response = await fetch(`/score?userId=${userId}`);
-                const data = await response.json();
-                coinCount = data.taps || 0;
-                const rank = data.rank || 1;
-                coinNumber.innerText = coinCount;
-                rankDisplay.innerText = `Rank: ${rank}`;
-            } catch (error) {
-                console.error('Error fetching coin count and rank:', error);
-            }
-        }
+    try {
+        const response = await fetch(`/score?userId=${userId}`);
+        const data = await response.json();
+        coinCount = data.taps || 0; // Update the coinCount variable
+        const rank = data.rank || 1;
+        
+        // Update the UI elements here
+        coinNumber.innerText = coinCount; 
+        rankDisplay.innerText = `Rank: ${rank}`;
+
+    } catch (error) {
+        console.error('Error fetching coin count and rank:', error);
+    }
+}
 
         document.addEventListener('click', async (event) => {
             if (!gameActive) return;
