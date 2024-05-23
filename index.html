@@ -217,21 +217,30 @@
             moveTimeoutId = setTimeout(moveCoinBag, moveInterval);
         }
 
-        async function fetchCoinCountAndRank() {
-    try {
-        const response = await fetch(`/score?userId=${userId}`);
-        const data = await response.json();
-        coinCount = data.taps || 0; // Update the coinCount variable
-        const rank = data.rank || 1;
-        
-        // Update the UI elements here
-        coinNumber.innerText = coinCount; 
-        rankDisplay.innerText = `Rank: ${rank}`;
+    async function fetchCoinCountAndRank() {
+        try {
+            const response = await fetch(`/score?userId=${userId}`);
+            if (!response.ok) {
+                throw new Error('Failed to fetch score');
+            }
 
-    } catch (error) {
-        console.error('Error fetching coin count and rank:', error);
+            const data = await response.json();
+            if (data.error) {
+                console.error(data.error);
+                return;
+            }
+
+            coinCount = data.taps || 0; // Update the coinCount variable
+            const rank = data.rank || 1;
+
+            // Update the UI elements here
+            coinNumber.innerText = coinCount;
+            rankDisplay.innerText = `Rank: ${rank}`;
+        } catch (error) {
+            console.error('Error fetching coin count and rank:', error);
+        }
     }
-}
+
 
         document.addEventListener('click', async (event) => {
             if (!gameActive) return;
