@@ -339,11 +339,19 @@
 
         window.addEventListener('load', () => {
             if (userId) {
-                fetchCoinCountAndRank();
-                startGame();
+                // Fetch the initial coin count and rank FIRST
+                fetchCoinCountAndRank()
+                    .then(() => {
+                        // THEN start the game
+                        startGame();
+                    })
+                    .catch(error => {
+                        console.error('Error initializing game:', error);
+                        // Handle the error (e.g., display an error message)
+                    });
             } else {
                 console.error('User ID not found in URL parameters.');
-                // Handle the case where userId is not available (e.g., display an error message)
+                // Handle the case where userId is not available 
             }
         });
     </script>
