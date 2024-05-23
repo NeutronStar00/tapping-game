@@ -97,7 +97,6 @@
             margin-bottom: 20px;
             text-align: center;
         }
-
         @media (max-width: 480px) {
             #game-title {
                 font-size: 3em;
@@ -141,173 +140,146 @@
         const tapButton = document.getElementById('tap-button');
         const coinNumber = document.getElementById('coin-number');
         const rankDisplay = document.getElementById('rank');
-        const elapsedBar = document.getElementById('elapsed-bar');
-        const timerDisplay = document.createElement('div');
-        timerDisplay.innerHTML = "&#128339;"; // Clock emoji for timer
-        timerDisplay.style.position = 'absolute';
-        timerDisplay.style.top = '20px';
-        timerDisplay.style.left = '20px';
-        timerDisplay.style.fontSize = '2em';
-        timerDisplay.style.color = '#fff';
-        timerDisplay.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.5)';
-        document.body.appendChild(timerDisplay);
-    
+        const timerDisplay = document.getElementById('timer');
+
         let coinCount = 0;
         let lastTapTime = 0;
-        let startTime = Date.now(); // Set the start time when the page loads
-        const gameDuration = 60; // Game duration in seconds
-        let moveInterval = 2000; // Initial time interval between movements in milliseconds
+        let startTime = null;
+        const gameDuration = 10; // Game duration in seconds
+        let moveInterval = 5000; // Initial time interval between movements in milliseconds
+        let gameIntervalId = null;
+        let gameActive = true; // Flag to track if the game is running
+        let moveTimeoutId = null; // Store the timeout ID for moving the bag
 
-    async function fetchCoinCountAndRank() {
-        try {
-            const response = await fetch(`/score?userId=${userId}`);
-            const data = await response.json();
-            coinCount = data.taps;
-            rank = data.rank;
-            coinNumber.innerText = coinCount;
-            rankDisplay.innerText = `Rank: ${rank}`;
-        } catch (error) {
-           console.error('Error fetching coin count and rank:', error);
-        }
-    }
+        function showFloatingPlusOne() {
+            const plusOne = document.createElement('div');
+            plusOne.classList.add('floating-plus-one');
+            plusOne.innerText = '+1';
+            tapButton.appendChild(plusOne);
 
-    function showFloatingPlusOne() {
-        const plusOne = document.createElement('div');
-        plusOne.classList.add('floating-plus-one');
-        plusOne.innerText = '+1';
-        tapButton.appendChild(plusOne);
-
-        plusOne.addEventListener('animationend', () => {
-            plusOne.remove();
-        });
-    }
-
-    function showFloatingMinusOne() {
-        const minusOne = document.createElement('div');
-        minusOne.classList.add('floating-minus-one');
-        minusOne.innerText = '-1';
-        tapButton.appendChild(minusOne);
-
-        minusOne.addEventListener('animationend', () => {
-            minusOne.remove();
-        });
-    }
-
-    function moveCoinBag() {
-        const containerWidth = document.body.clientWidth;
-        const containerHeight = document.body.clientHeight;
-        const buttonWidth = tapButton.offsetWidth;
-        const buttonHeight = tapButton.offsetHeight;
-
-        const maxX = containerWidth - buttonWidth;
-        const maxY = containerHeight - buttonHeight;
-
-        const newX = Math.floor(Math.random() * maxX);
-        const newY = Math.floor(Math.random() * maxY);
-
-        tapButton.style.left = `${newX}px`;
-        tapButton.style.top = `${newY}px`;
-
-        setTimeout(moveCoinBag, moveInterval); // Set the next movement with a fixed interval
-    }
-
-    document.addEventListener('click', async (event) => {
-        const now = Date.now();
-        if (now - lastTapTime < 1000) {
-            return;
-        }
-        lastTapTime = now;
-
-        const isButtonClicked = event.target === tapButton;
-
-        if (isButtonClicked) {
-            coinCount++;
-            coinNumber.innerText = coinCount;
-            showFloatingPlusOne();
-        } else {
-            coinCount = Math.max(0, coinCount - 1); // Ensure coin count doesn't go below 0
-            coinNumber.innerText = coinCount;
-            showFloatingMinusOne();
-        }
-
-        moveCoinBag();
-
-        try {
-            const response = await fetch('/tap', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ userId: userId, taps: isButtonClicked ? 1 : -1 }),
+            plusOne.addEventListener('animationend', () => {
+                plusOne.remove();
             });
-
-            if (!response.ok) {
-                const error = await response.text();
-                console.error('Error:', error);
-            }
-        } catch (error) {
-            console.error('Error:', error);
         }
-    });
 
-    let userId = null;
-    window.Telegram.WebApp.onEvent('initData', (data) => {
-        userId = data.userId;
-        startTime = Date.now(); // Initialize startTime here
-        updateTimer(); // Start the timer
-        moveCoinBag(); // Start moving the coin bag
-    });
+        function showFloatingMinusOne() {
+            const minusOne = document.createElement('div');
+            minusOne.classList.add('floating-minus-one');
+            minusOne.innerText = '-1';
+            tapButton.appendChild(minusOne);
 
-    function updateTimer() {
-        const currentTime = Date.now();
-        const elapsedTime = currentTime - startTime;
-        const remainingTime = Math.max((gameDuration * 1000 - elapsedTime) / 1000, 0);
-        const minutes = Math.floor(remainingTime / 60);
-        const seconds = Math.floor(remainingTime % 60);
-        const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        timerDisplay.innerText = formattedTime;
+            minusOne.addEventListener('animationend', () => {
+                minusOne.remove();
+            });
+        }
 
-        if (remainingTime === 0) {
-            // Game over logic
+        function moveCoinBag() {
+            if (!gameActive) return;
+
+            const containerWidth = document.body.clientWidth;
+            const containerHeight = document.body.clientHeight;
+            const buttonWidth = tapButton.offsetWidth;
+            const buttonHeight = tapButton.offsetHeight;
+
+            const maxX = containerWidth - buttonWidth;
+            const maxY = containerHeight - buttonHeight;
+
+            const newX = Math.floor(Math.random() * maxX);
+            const newY = Math.floor(Math.random() * maxY);
+
+            tapButton.style.left = `${newX}px`;
+            tapButton.style.top = `${newY}px`;
+
+            // Use setTimeout instead of setInterval to avoid overlapping movements
+            moveTimeoutId = setTimeout(moveCoinBag, moveInterval);
+        }
+
+        document.addEventListener('click', async (event) => {
+            if (!gameActive) return; // Ignore clicks if the game is over
+
+            const now = Date.now();
+            if (now - lastTapTime < 1000) {
+                return;
+            }
+            lastTapTime = now;
+
+            const isButtonClicked = event.target === tapButton;
+
+            if (isButtonClicked) {
+                coinCount++;
+            } else {
+                coinCount = Math.max(0, coinCount - 1);
+            }
+
+            coinNumber.innerText = coinCount;
+
+            if (isButtonClicked) {
+                showFloatingPlusOne();
+            } else {
+                showFloatingMinusOne();
+            }
+
+            // Move the bag only if the game is active
+            if (gameActive) {
+                moveCoinBag();
+            }
+        });
+
+        function updateTimer() {
+            const currentTime = Date.now();
+            const elapsedTime = currentTime - startTime;
+            const remainingTime = Math.max((gameDuration * 1000 - elapsedTime) / 1000, 0);
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = Math.floor(remainingTime % 60);
+            const formattedTime = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timerDisplay.innerText = formattedTime;
+
+            if (remainingTime === 0) {
+                endGame();
+            }
+        }
+
+        function startGame() {
+            startTime = Date.now();
+            gameIntervalId = setInterval(updateTimer, 1000);
+            moveCoinBag();
+        }
+
+        function showEndScreen() {
+            const endScreen = document.createElement('div');
+            endScreen.style.position = 'absolute';
+            endScreen.style.top = '0';
+            endScreen.style.left = '0';
+            endScreen.style.width = '100%';
+            endScreen.style.height = '100%';
+            endScreen.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+            endScreen.style.display = 'flex';
+            endScreen.style.justifyContent = 'center';
+            endScreen.style.alignItems = 'center';
+            endScreen.style.flexDirection = 'column';
+
+            const endMessage = document.createElement('div');
+            endMessage.innerText = `Game Over!\nCoins Collected: ${coinCount}`;
+            endMessage.style.fontSize = '2em';
+            endMessage.style.color = 'orange';
+            endMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.5)';
+            endMessage.style.textAlign = 'center';
+            endMessage.style.textStroke = "5px black"; // Add black outline
+            endMessage.style.marginBottom = '20px';
+            endScreen.appendChild(endMessage);
+
+            document.body.appendChild(endScreen);
+        }
+        function endGame() {
+            clearInterval(gameIntervalId);
+            clearTimeout(moveTimeoutId); // Clear the timeout when the game ends
+            gameActive = false; 
             tapButton.disabled = true;
             tapButton.style.cursor = 'not-allowed';
-            showEndScreen(); // Call the function to display the end screen
-        } else {
-            setTimeout(updateTimer, 1000); // Update the timer every second
+            showEndScreen();
         }
-    }
 
-    function showEndScreen() {
-        const endScreen = document.createElement('div');
-        endScreen.style.position = 'absolute';
-        endScreen.style.top = '0';
-        endScreen.style.left = '0';
-        endScreen.style.width = '100%';
-        endScreen.style.height = '100%';
-        endScreen.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        endScreen.style.display = 'flex';
-        endScreen.style.justifyContent = 'center';
-        endScreen.style.alignItems = 'center';
-        endScreen.style.flexDirection = 'column';
-
-        const endMessage = document.createElement('div');
-        endMessage.innerText = `Game Over!\nCoins Collected: ${coinCount}`;
-        endMessage.style.fontSize = '2em';
-        endMessage.style.color = '#fff';
-        endMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.5)';
-        endMessage.style.textAlign = 'center';
-        endMessage.style.marginBottom = '20px';
-        endScreen.appendChild(endMessage);
-
-        document.body.appendChild(endScreen);
-    }
-
-    // Telegram WebApp initialization
-    const tg = window.Telegram.WebApp;
-    tg.expand();
-    tg.onEvent('initData', function (data) {
-        userId = data.userId;
-    });
-</script>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-
+        window.addEventListener('load', startGame);
+    </script>
+</body>
+</html>
