@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
     <title>MYCoin Tapping Game</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -22,8 +22,9 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
+            min-height: 100vh;
             padding: 20px;
+            position: relative;
             box-sizing: border-box;
         }
         #coin-count {
@@ -146,10 +147,10 @@
         let lastTapTime = 0;
         let startTime = null;
         const gameDuration = 60; // Game duration in seconds
-        let moveInterval = 5000; // Initial time interval between movements in milliseconds
+        let moveInterval = 950; // Bag movement interval in milliseconds
         let gameIntervalId = null;
         let gameActive = true; // Flag to track if the game is running
-        let moveTimeoutId = null; // Store the timeout ID for moving the bag
+        let moveTimeoutId = null; 
 
         function showFloatingPlusOne() {
             const plusOne = document.createElement('div');
@@ -180,25 +181,22 @@
             const containerHeight = document.body.clientHeight;
             const buttonWidth = tapButton.offsetWidth;
             const buttonHeight = tapButton.offsetHeight;
-
             const maxX = containerWidth - buttonWidth;
             const maxY = containerHeight - buttonHeight;
-
             const newX = Math.floor(Math.random() * maxX);
             const newY = Math.floor(Math.random() * maxY);
 
             tapButton.style.left = `${newX}px`;
             tapButton.style.top = `${newY}px`;
 
-            // Use setTimeout instead of setInterval to avoid overlapping movements
-            moveTimeoutId = setTimeout(moveCoinBag, moveInterval);
+            moveTimeoutId = setTimeout(moveCoinBag, moveInterval); 
         }
 
         document.addEventListener('click', async (event) => {
-            if (!gameActive) return; // Ignore clicks if the game is over
+            if (!gameActive) return; 
 
             const now = Date.now();
-            if (now - lastTapTime < 1000) {
+            if (now - lastTapTime < 800) {
                 return;
             }
             lastTapTime = now;
@@ -217,11 +215,6 @@
                 showFloatingPlusOne();
             } else {
                 showFloatingMinusOne();
-            }
-
-            // Move the bag only if the game is active
-            if (gameActive) {
-                moveCoinBag();
             }
         });
 
