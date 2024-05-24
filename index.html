@@ -217,78 +217,102 @@
             moveTimeoutId = setTimeout(moveCoinBag, moveInterval);
         }
 
-    async function fetchCoinCountAndRank() {
-        try {
-            const response = await fetch(`/score?userId=${userId}`);
-            if (!response.ok) {
-                throw new Error('Failed to fetch score');
+        async function fetchCoinCountAndRank() {
+            try {
+                const response = await fetch(`/score?userId=${userId}`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch score');
+                }
+
+                const data = await response.json();
+                if (data.error) {
+                    console.error(data.error);
+                    return;
+                }
+
+                coinCount = data.taps || 0;
+                const rank = data.rank || 1;
+
+                // Update the UI elements here
+                coinNumber.innerText = coinCount;
+                rankDisplay.innerText = `Rank: ${rank}`;
+            } catch (error) {
+                console.error('Error fetching coin count and rank:', error);
             }
-
-            const data = await response.json();
-            if (data.error) {
-                console.error(data.error);
-                return;
-            }
-
-            coinCount = data.taps || 0; // Update the coinCount variable
-            const rank = data.rank || 1;
-
-            // Update the UI elements here
-            coinNumber.innerText = coinCount;
-            rankDisplay.innerText = `Rank: ${rank}`;
-        } catch (error) {
-            console.error('Error fetching coin count and rank:', error);
         }
-    }
 
 
         document.addEventListener('click', async (event) => {
-            if (!gameActive) return;
+                if (!gameActive) return;
 
-            const now = Date.now();
-            if (now - lastTapTime < 800) {
-                return;
-            }
-            lastTapTime = now;
-
-            const isButtonClicked = event.target === tapButton;
-
-            if (isButtonClicked) {
-                coinCount++;
-            } else {
-                coinCount = Math.max(0, coinCount - 1);
-            }
-
-            coinNumber.innerText = coinCount;
-
-            if (isButtonClicked) {
-                showFloatingPlusOne();
-            } else {
-                showFloatingMinusOne();
-            }
-
-            try {
-                // Update the taps on the server
-                const response = await fetch('/tap', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ userId: userId, taps: isButtonClicked ? 1 : -1 }),
-                });
-
-                if (!response.ok) {
-                    const error = await response.text();
-                    console.error('Error updating taps:', error);
-                    // You might want to display an error message to the user here
-                } else {
-                    // Optionally update the rank after updating taps
-                    await fetchCoinCountAndRank();
+                const now = Date.now();
+                if (now - lastTapTime < 800) {
+                    return;
                 }
-            } catch (error) {
-                console.error('Error updating taps:', error);
+                lastTapTime = now;
+
+                const isButtonClicked = event.target === tapButton;
+
+                if (isButtonClicked) {
+                    coinCount++;
+                } else {
+                    coinCount = Math.max(0, coinCount - 1);
+                }
+
+                coinNumber.innerText = coinCount;
+
+                if (isButtonClicked) {
+                    showFloatingPlusOne();
+                } else {
+                    showFloatingMinusOne();
+                }
+
+                try {
+                    const response = await fetch('/tap', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ userId: userId, taps: isButtonClicked ? 1 : -1 }),
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        console.error('Error updating taps:', error);
+
+                        if (error.includes('Daily tap limit reached')) {
+                            endGame();
+                            showEndScreen();
+                            alert('You have reached the daily tap limit. Come back tomorrow!');
+                        } else if (error.includes('Rate limit exceeded')) {
+                            alert('You are tapping too fast. Please slow down!');
+                        }
+                    } else {
+                        await fetchCoinCountAndRank();
+                    }
+                } catch (error) {
+                    console.error('Error updating taps:', error);
+                }
+            });
+
+            async function sendFinalTaps() {
+                try {
+                    const response = await fetch('/final-taps', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ userId: userId, taps: coinCount }),
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.text();
+                        console.error('Error sending final taps:', error);
+                    }
+                } catch (error) {
+                    console.error('Error sending final taps:', error);
+                }
             }
-        });
 
         function updateTimer() {
             const currentTime = Date.now();
@@ -324,7 +348,7 @@
             endScreen.style.flexDirection = 'column';
 
             const endMessage = document.createElement('div');
-            endMessage.innerText = `Game Over!\nCoins Collected: ${coinCount}`;
+            endMessage.innerText = `Game Over!\nCoins Collected: ${coinCount}\nRank: ${rank}`;
             endMessage.style.fontSize = '2em';
             endMessage.style.color = 'orange';
             endMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.5)';
@@ -338,12 +362,15 @@
 
         function endGame() {
             clearInterval(gameIntervalId);
-            clearTimeout(moveTimeoutId); // Clear the timeout when the game ends
+            clearTimeout(moveTimeoutId);
             gameActive = false;
             tapButton.disabled = true;
             tapButton.style.cursor = 'not-allowed';
             showEndScreen();
-        }
+
+            // Send final taps to the backend
+            sendFinalTaps();
+}
 
         // Get userId from URL parameters
         const urlParams = new URLSearchParams(window.location.search);
