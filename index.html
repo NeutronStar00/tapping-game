@@ -162,6 +162,14 @@
     <div style="position: absolute; top: 20px; left: 20px; font-size: 2em;">⏰ <span id="timer">60s</span></div>
 
     <script>
+        const coinSound = new Audio('coin_sound.mp3');
+        const loseSound = new Audio('lose_sound.mp3');
+        const gameOverSound = new Audio('game_over_sound.mp3');
+
+        // Preload the sound files
+        coinSound.preload = 'auto';
+        loseSound.preload = 'auto';
+        gameOverSound.preload = 'auto';
         const tapButton = document.getElementById('tap-button');
         const coinNumber = document.getElementById('coin-number');
         const rankDisplay = document.getElementById('rank');
@@ -186,6 +194,7 @@
             plusOne.addEventListener('animationend', () => {
                 plusOne.remove();
             });
+            coinSound.play();
         }
 
         function showFloatingMinusOne() {
@@ -197,6 +206,7 @@
             minusOne.addEventListener('animationend', () => {
                 minusOne.remove();
             });
+            loseSound.play();
         }
 
         function moveCoinBag() {
@@ -370,6 +380,7 @@
 
             // Send final taps to the backend
             sendFinalTaps();
+            gameOverSound.play();
 }
 
         // Get userId from URL parameters
