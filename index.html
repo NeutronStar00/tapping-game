@@ -162,9 +162,9 @@
     <div style="position: absolute; top: 20px; left: 20px; font-size: 2em;">⏰ <span id="timer">60s</span></div>
 
     <script>
-        const coinSound = new Audio('coin_sound.mp3');
-        const loseSound = new Audio('lose_sound.mp3');
-        const gameOverSound = new Audio('game_over_sound.mp3');
+        const coinSound = new Audio('./coin_sound.mp3.MP3');
+        const loseSound = new Audio('./lose_sound.mp3.MP3');
+        const gameOverSound = new Audio('./game_over_sound.mp3.MP3');
 
         // Preload the sound files
         coinSound.preload = 'auto';
@@ -184,6 +184,16 @@
         let gameActive = true; // Flag to track if the game is running
         let moveTimeoutId = null;
         let userId = null; // To store the user ID
+
+        coinSound.addEventListener('canplaythrough', () => {
+            // Sound is fully loaded and ready to play 
+        });
+        loseSound.addEventListener('canplaythrough', () => { 
+            // ...
+        });
+        gameOverSound.addEventListener('canplaythrough', () => {
+            // ...
+        });
 
         function showFloatingPlusOne() {
             const plusOne = document.createElement('div');
@@ -264,7 +274,7 @@
                 const isButtonClicked = event.target === tapButton;
 
                 if (isButtonClicked) {
-                    coinCount++;
+                    coinCount++;   
                 } else {
                     coinCount = Math.max(0, coinCount - 1);
                 }
