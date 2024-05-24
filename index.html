@@ -239,7 +239,7 @@
 
         async function fetchCoinCountAndRank() {
             try {
-                const response = await fetch(`/score?userId=${userId}`);
+                const response = await fetch(`https://telegrambot-a9os.onrender.com/score?userId=${userId}`);
                 if (!response.ok) {
                     throw new Error('Failed to fetch score');
                 }
@@ -288,7 +288,7 @@
                 }
 
                 try {
-                    const response = await fetch('/tap', {
+                    const response = await fetch('https://telegrambot-a9os.onrender.com/tap', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -317,7 +317,7 @@
 
             async function sendFinalTaps() {
                 try {
-                    const response = await fetch('/final-taps', {
+                    const response = await fetch('https://telegrambot-a9os.onrender.com/final-taps', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
