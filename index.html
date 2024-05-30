@@ -400,6 +400,7 @@
         window.addEventListener('load', () => {
             if (userId) {
                 // Fetch the initial coin count and rank FIRST
+                console.log("found the userId", userId);
                 fetchCoinCountAndRank()
                     .then(() => {
                         // THEN start the game
