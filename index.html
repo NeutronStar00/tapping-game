@@ -176,6 +176,7 @@
         const timerDisplay = document.getElementById('timer');
 
         let coinCount = 0;
+        let gameCoinCount = 0;
         let lastTapTime = 0;
         let startTime = null;
         const gameDuration = 30; // Game duration in seconds
@@ -275,8 +276,10 @@
                 const isButtonClicked = event.target === tapButton;
 
                 if (isButtonClicked) {
+                    gameCoinCount++;
                     coinCount++;   
                 } else {
+                    gameCoinCount = Math.max(0, gameCoinCount - 1);
                     coinCount = Math.max(0, coinCount - 1);
                 }
 
@@ -323,7 +326,7 @@
                         headers: {
                             'Content-Type': 'application/json',
                         },
-                        body: JSON.stringify({ userId: userId, taps: coinCount }),
+                        body: JSON.stringify({ userId: userId, taps: gameCoinCount }),
                     });
 
                     if (!response.ok) {
@@ -352,6 +355,7 @@
         function startGame() {
             startTime = Date.now();
             gameIntervalId = setInterval(updateTimer, 1000);
+            gameCoinCount = 0;
             moveCoinBag();
         }
 
@@ -369,7 +373,7 @@
             endScreen.style.flexDirection = 'column';
 
             const endMessage = document.createElement('div');
-            endMessage.innerText = `Game Over!\nCoins Collected: ${coinCount}`;
+            endMessage.innerText = `Game Over!\nCoins Collected: ${gameCoinCount}`;
             endMessage.style.fontSize = '2em';
             endMessage.style.color = 'orange';
             endMessage.style.textShadow = '2px 2px 4px rgba(0, 0, 0, 0.5)';
