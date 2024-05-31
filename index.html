@@ -299,21 +299,6 @@
                         },
                         body: JSON.stringify({ userId: userId, taps: isButtonClicked ? 1 : -1 }),
                     });
-
-                    if (!response.ok) {
-                        const error = await response.text();
-                        console.error('Error updating taps:', error);
-
-                        if (error.includes('Daily tap limit reached')) {
-                            endGame();
-                            showEndScreen();
-                            alert('You have reached the daily tap limit. Come back tomorrow!');
-                        } else if (error.includes('Rate limit exceeded')) {
-                            alert('You are tapping too fast. Please slow down!');
-                        }
-                    } else {
-                        await fetchCoinCountAndRank();
-                    }
                 } catch (error) {
                     console.error('Error updating taps:', error);
                 }
